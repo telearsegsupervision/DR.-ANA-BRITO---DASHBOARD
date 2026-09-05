@@ -573,7 +573,7 @@
           <label for="fCliente">Cliente</label>
           <select id="fCliente"></select>
         </div>
-        <div class="field" style="display:none;">
+        <div class="field">
           <label for="fEst">Sector</label>
           <select id="fEst"></select>
         </div>
@@ -678,7 +678,7 @@
           <label for="rCliente">Cliente</label>
           <select id="rCliente"></select>
         </div>
-        <div class="field" style="display:none;">
+        <div class="field">
           <label for="rEst">Sector</label>
           <select id="rEst"></select>
         </div>
@@ -851,7 +851,7 @@
   // Carga en vivo desde Google Sheets (una hoja por propiedad)
   // =========================================================
   var SHEET_REGISTRY = [
-    {estacion:"DRA. ANA BRITO", prop:"JHIKATAL", id:"1HEqZyceL2xAJC6-kffCkjDk2xpV5GPcJ", gids:[1340650713,1566134355,1877118122,1907927161,300596470,613223367,912292373]}
+    {estacion:"DRA. ANA BRITO", prop:"ANA BRITO", id:"1HEqZyceL2xAJC6-kffCkjDk2xpV5GPcJ", gids:[1340650713,1566134355,1877118122,1907927161,300596470,613223367,912292373]}
   ];
 
   var TIPO_KNOWN = ["ASESE","ASESA","ASE SE","ACESE","CSESE","CSESA","CESESE"];
@@ -1013,11 +1013,21 @@
   }
 
   var DATA = [];
+  // Es una sola propiedad (ANA BRITO) con dos sectores reales: JIKATHAL
+  // (escrito con variantes "JHIKATAL"/"JHIKATHAL" en la hoja de origen) y
+  // AGUAMARINA. El campo CAMPAMENTO de cada incidente identifica el sector,
+  // no una propiedad distinta.
+  function normalizeSector(s){
+    var u = cleanWs(s).toUpperCase();
+    if (u === "JHIKATAL" || u === "JHIKATHAL" || u === "JIKATHAL") return "JIKATHAL";
+    if (u === "AGUAMARINA") return "AGUAMARINA";
+    return u || "JIKATHAL";
+  }
   function rebuildData(){
     DATA = RAW.map(function(r){
       return {
-        n: r.n, estacion: r.estacion, fecha: r.dia, hora: r.hora,
-        prop: r.camaronera, cliente: clienteDe(r.camaronera), perim: r.perimetro, nt: r.nt, tipo: r.tipo,
+        n: r.n, estacion: normalizeSector(r.camaronera), fecha: r.dia, hora: r.hora,
+        prop: "ANA BRITO", cliente: "DRA. ANA BRITO", perim: r.perimetro, nt: r.nt, tipo: r.tipo,
         desc: r.descripcion, inv: r.involucrado, nivel: r.nivel,
         op: r.operador, accion: r.accion
       };
@@ -1080,13 +1090,11 @@
 
   // Sectores y propiedades conocidos por el registro de hojas, para que aparezcan
   // en los filtros aunque todavia no tengan incidentes cargados.
-  var KNOWN_SECTORS = uniqueSorted(SHEET_REGISTRY.map(function(s){return s.estacion;}));
-  var KNOWN_PROPS_BY_SECTOR = {};
-  SHEET_REGISTRY.forEach(function(s){
-    if (!KNOWN_PROPS_BY_SECTOR[s.estacion]) KNOWN_PROPS_BY_SECTOR[s.estacion] = [];
-    KNOWN_PROPS_BY_SECTOR[s.estacion].push(s.prop);
-  });
-  var KNOWN_PROPS_ALL = uniqueSorted(SHEET_REGISTRY.map(function(s){return s.prop;}));
+  // Los dos sectores reales de la propiedad, para que ambos aparezcan en el
+  // filtro aunque uno de ellos (AGUAMARINA) todavia no tenga incidentes.
+  var KNOWN_SECTORS = ["AGUAMARINA", "JIKATHAL"];
+  var KNOWN_PROPS_BY_SECTOR = { "AGUAMARINA": ["ANA BRITO"], "JIKATHAL": ["ANA BRITO"] };
+  var KNOWN_PROPS_ALL = ["ANA BRITO"];
   // Operadores registrados en las hojas de origen que aun no tienen incidentes
   // cargados, para que igual aparezcan en el filtro de Operador.
   var ALWAYS_SHOW_OPERADORES = [];
